@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	
+
+	<title>Table</title>
+</head>
+
+<body>
+	<div class="container-fluid">
+
+		<div class="row">
+
+			<div class="col-md-5 col-sm-offset-1">
+				<h3>Web Cam</h3>
+				<img src="{{ url_for('video_feed') }}"/>
+			</div>
+		
+			<div class="col-md-5">
+				
+				<h1>Table Transition</h1>
+				<table id="table" class="table table-bordered">
+					<tbody>
+						<tr id="r0" style="visibility: hidden;">
+							<td id="r0c0">Z</td>
+							<td id="r0c1"> </td>
+							<td id="r0c2">.</td>
+							<td id="r0c3"><--</td>
+							<td id="r0c4">CLR</td>
+						</tr>				
+					</tbody>
+				</table>
+
+				<textarea id="sentence" readonly rows="5" cols="50"></textarea>
+				
+				<div>
+					<button  class="btn btn-lg btn-success" type="button" onclick="loop()">Stop</button>
+					<!-- <button class="btn btn-danger" type="button" onclick="restart()">Stop Again</button>
+					<button class="btn btn-info" >Create Table</button> -->
+				</div>
+
+			</div>
+			<textarea id="connect" rows="5"></textarea>
+		
+		</div>
+		<button  id="clk" class="btn btn-success" type="button" onclick="doit()">DO</button>
+
+	</div>
+
+<script type="text/javascript">
+	// console.log("DSFD");
+
+var row0=table.rows[0];
+
+function createTable(){
+
+	var table=document.getElementById("table");
+	var ascii='A'.charCodeAt();
+	var row;
+
+	for(var i=0;i<5;i++){
+		
+		var tr=table.insertRow();
+		tr.id="r"+(i+1);
+		
+		row=table.rows[i];
+
+		for(var j=0;j<5;j++){
+			var td=tr.insertCell();
+			
+			td.innerHTML=row.cells[j].innerHTML;
+			row.cells[j].innerHTML=String.fromCharCode(ascii+i*5+j);				
+			
+			td.id="r"+(i+1)+"c"+j;
+		}
+	}
+	document.getElementById("r0").style.visibility="visible";
+}
+
+createTable();
+
+
+var rowCount=0,columnCount=0,rowSize=6,colSize=5, delay=1500, blink = 0 ;
+
+//Return Previous value of Count
+function getPrevious(count,size){
+
+	return (count-1+size)%size;
+}
+
+function getNext(count,size){
+	return (count+1)%size;
+}
+
+function rowHighlight(){	
+	var curr,pre;
+	
+	//get previous row
+	pre=document.getElementById( "r" + getPrevious(rowCount,rowSize) );
+
+	//get current row
+	curr=document.getElementById( "r" + rowCount);
+
+	//check if previous row is highlighted; if so then remove marker
+	if(pre.classList.contains("danger"))
+		pre.classList.remove("danger");
+
+	//highlight the current row
+	curr.classList.add("danger");
+
+	//Increment Count
+	rowCount=getNext(rowCount,rowSize);
+}
+
+function columnHighlight()
+{
+	var curr,pre;		
+
+	document.getElementById( "r" + getPrevious(rowCount,rowSize)).classList.remove("danger");
+
+	// get Previous column
+	pre=document.getElementById("r" + getPrevious(rowCount,rowSize) + "c" + getPrevious(columnCount,colSize) );
+
+	// get Current Column
+	curr=document.getElementById("r" + getPrevious(rowCount,rowSize) + "c" + columnCount);
+
+	console.log("r" + getPrevious(rowCount,rowSize) + "c" + getPrevious(columnCount,colSize));
+
+	if(pre.classList.contains("success"))
+		pre.classList.remove("success");
+
+	curr.classList.add("success");
+
+	columnCount=getNext(columnCount,colSize);
+}
+
+function cleaRowHighlighter()
+{
+	clearInterval(rowInterval);
+
+	columnCount=0;
+	columnInterval=setInterval(columnHighlight,delay);
+}
+
+
+function restart()
+{
+	clearInterval(columnInterval);
+	
+	document.getElementById("r" + getPrevious(rowCount,rowSize) + "c" + getPrevious(columnCount,colSize) ).classList.remove("success");
+
+	var ch=document.getElementById("r" + getPrevious(rowCount,rowSize) + "c" + getPrevious(columnCount,colSize) ).innerHTML;
+
+	var text=document.getElementById("sentence");
+
+	switch(ch){
+
+		case "&lt;--": text.innerHTML=text.innerHTML.slice(0,-1);
+			 		break;
+		case "CLR": text.innerHTML="";
+					break;
+		default : text.innerHTML+=ch;
+	}
+	rowCount=getPrevious(rowCount,rowSize);
+	rowInterval=setInterval(rowHighlight,delay);
+}
+
+var rowInterval=setInterval(rowHighlight,delay);
+
+function loop (){
+	blink += 1;
+	blink %= 2;
+
+	if(blink % 2){
+		cleaRowHighlighter();
+	}
+
+	else{
+		restart();
+	}
+}
+
+</script>
+
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+
+<script type="text/javascript" charset="utf-8">
+
+console.log('dfd');
+
+var socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
+
+socket.on('connect', function() {
+	console.log("connected");
+    // socket.emit('my event', {data: 'I\'m connected!'});
+});
+
+console.log(socket);
+
+</script>
+	
+	
+</body>
+</html>
